@@ -34,6 +34,20 @@ options regardless of session context. -->
 
 ---
 
+## 2026-05-03 — Initial Replit Bootstrap Against Hostinger MySQL
+
+### Decisions Confirmed
+- Schema bootstrap path: `ensureTables()` auto-migration on first API server boot, instead of importing `lib/db/install.sql` via phpMyAdmin. Site comes up with default copy; owner customizes via `/settings` after promotion.
+- Database target: Hostinger Cloud Starter MySQL, reached from Replit by allow-listing `%` in hPanel → Remote MySQL for the DB user. Trade-off accepted: relies on a strong DB password as the sole connection-level guard.
+- Workflows configured: `API Server` (`npm run dev:api`, port 8080, console output) and `Web` (`FRONTEND_PORT=3000 npm run dev:web`, port 3000, console output). Frontend pinned to port 3000 to keep the configured GitHub OAuth callback `http://localhost:3000/api/auth/callback/github` valid.
+- Secrets policy for this environment: env vars set as Replit Secrets and inherited by the workflow process; no committed `.env`. The api-server `start` script's `--env-file-if-exists=../../.env` is left in place but unused on Replit.
+- Auth providers active: GitHub only. Google OAuth pair intentionally left unset; can be added later without migration.
+
+### Open Items
+- [ ] Owner promotion has not yet been performed; user must sign in once with GitHub, then run `npm run promote-owner --workspace=@workspace/scripts -- --email <addr>`.
+
+---
+
 ## 2026-04-29 — Canonical MySQL Datastore
 
 ### Decisions Confirmed
