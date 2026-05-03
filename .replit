@@ -43,8 +43,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "FRONTEND_PORT=3000 npm run dev:web"
-waitForPort = 3000
+args = "npm run dev:web"
 
 [agent]
 expertMode = true
