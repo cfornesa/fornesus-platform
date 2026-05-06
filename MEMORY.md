@@ -85,3 +85,9 @@ or rejection. -->
 
 2026-05-02 · SEARCH · Visitors and the owner can search published posts at `/search` with relevance ranking and structured filters (date range, source, author, content format). The index is native MySQL InnoDB FULLTEXT on a new `posts.content_text` shadow column populated automatically from `posts.content` via the shared `computeContentText` helper. Always filters `WHERE status = 'published'` — even for the owner; the search and the public timeline are semantically the same set. The header search bar is reachable on every page on every viewport, with `/` to focus and `Esc` to clear.
     [Verified from the new Search section in replit.md, `routes/posts.ts` `GET /search`, the `posts_content_text_fulltext` index created by `ensureIndex` in `lib/db/src/migrate.ts`, and the `/search` page in the frontend. Task #13 merged 2026-05-02.]
+
+2026-05-05 · DEPLOYMENT · The current shipped app should be documented as a Replit-deployed single-process runtime where the Express server serves both the built frontend and `/api/*`, with that deployed behavior treated as the canonical operational shape.
+    [Verified from `.replit`, `replit.md`, `artifacts/api-server/src/app.ts`, and the docs sync requested on 2026-05-05.]
+
+2026-05-05 · AI SETTINGS · `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly 32 bytes for owner AI vendor settings to save successfully; a plain 32-character ASCII string is valid.
+    [Verified from `artifacts/api-server/src/lib/ai-settings.ts` and the successful schema audit ruling the DB out as the cause of the save failure.]

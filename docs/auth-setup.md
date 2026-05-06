@@ -44,7 +44,7 @@ DB_USER=your_database_user
 DB_PASS=your_database_password
 DB_SSL=false
 CRON_SECRET=replace_with_a_long_random_secret_for_feed_refresh
-AI_SETTINGS_ENCRYPTION_KEY=replace_with_a_32_plus_character_secret
+AI_SETTINGS_ENCRYPTION_KEY=12345678901234567890123456789012
 ```
 
 Generate a real auth secret with something like:
@@ -111,6 +111,7 @@ npm run promote-owner --workspace=@workspace/scripts -- --id your-user-id
 
 - `CRON_SECRET` lets automated feed refresh callers authenticate with `x-cron-secret` instead of an owner cookie session.
 - `AI_SETTINGS_ENCRYPTION_KEY` is required to encrypt owner AI vendor API keys before storing them in `user_ai_vendor_settings`.
+- It must decode to exactly `32 bytes`. A plain 32-character ASCII string is valid.
 
 ## Expected Behavior After Setup
 
@@ -118,7 +119,7 @@ npm run promote-owner --workspace=@workspace/scripts -- --id your-user-id
 - Signed-in members can edit their own comments after posting.
 - The promoted owner can create, edit, and delete posts.
 - Owner post composition uses the rich editor with sanitized HTML storage, local image uploads, and owner-trusted `https:` iframe embeds.
-- The owner can also moderate comments.
+- The owner can also edit or delete any comment.
 - The owner can manage site settings, categories, pages, feed sources, pending feed imports, navigation items, and AI settings.
 
 ## Public Feed Endpoints

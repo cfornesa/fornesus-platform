@@ -33,7 +33,7 @@ Test vendors in this order:
 
 ### Environment Preflight
 
-- `AI_SETTINGS_ENCRYPTION_KEY` is set in the runtime environment.
+- `AI_SETTINGS_ENCRYPTION_KEY` is set in the runtime environment and decodes to exactly `32 bytes`.
 - The app has been restarted after any `.env` change.
 - You are signed in as the `owner` user.
 - The `user_ai_vendor_settings` table exists.

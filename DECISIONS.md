@@ -34,6 +34,23 @@ options regardless of session context. -->
 
 ---
 
+## 2026-05-05 — Docs Synced To Shipped Replit Runtime
+
+### Decisions Confirmed
+- Documentation should now describe the current shipped Replit deployment behavior as canonical, with environment-specific setup called out separately.
+- `README.md` was expanded from a placeholder into a current product/runtime overview covering deployment shape, routes, environment variables, schema truth, and owner bootstrap.
+- `docs/auth-setup.md` was corrected to reflect the real `AI_SETTINGS_ENCRYPTION_KEY` requirement: it must decode to exactly 32 bytes, not merely be "32 plus characters".
+- `docs/dependencies.md` now records Replit deployment as an explicit operational dependency alongside the existing hosted MySQL and OAuth providers.
+- `docs/ai-vendor-verification.md` now reflects the exact AI encryption-key preflight requirement used by the running code.
+- `docs/db-cleanup-report.md` was marked historical/superseded because its older table-removal guidance would be destructive against the current live schema and deployed feature set.
+- `replit.md` was updated so route descriptions, owner-only behavior, runtime notes, and schema guidance match the current app rather than an older narrower surface.
+
+### Operational Outcome
+- The markdown documentation set now points people toward forward reconciliation with the current shipped schema instead of cleanup toward an obsolete reduced schema.
+- The deployed Replit runtime, not an older experimental schema branch, is now the primary reference point for setup and operations docs.
+
+---
+
 ## 2026-05-03 — Initial Replit Bootstrap Against Hostinger MySQL
 
 ### Decisions Confirmed
@@ -718,4 +735,3 @@ approximation, so historical and new rows are stripped identically.
   `/api/feed-sources` endpoint still exposes the full row to the
   owner, so this is a deliberately narrowed projection rather than
   a change to the existing endpoint.
-

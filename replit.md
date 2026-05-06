@@ -2,7 +2,7 @@
 
 ## Overview
 
-Full-stack microblogging platform ("Microblog") — npm workspace monorepo, TypeScript throughout.
+Full-stack author-owned publishing platform deployed on Replit as a single Express process that serves both the frontend and the API.
 
 ## Stack
 
@@ -34,7 +34,8 @@ Full-stack microblogging platform ("Microblog") — npm workspace monorepo, Type
 - `npm run typecheck` — full typecheck across all packages
 - `npm run build` — typecheck + build all packages
 - `npm run codegen --workspace=@workspace/api-spec` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `npm run push --workspace=@workspace/db` — push DB schema changes (dev only)
+- `npm run push --workspace=@workspace/db` — push DB schema changes manually when needed
+- `npm run push-force --workspace=@workspace/db` — force Drizzle schema push
 - `npm run dev` — default single-port local app flow
 - `npm run dev:hot` — optional two-port dev flow with Vite hot reload
 - `npm run dev:api` — run API server locally
@@ -53,26 +54,33 @@ MySQL is the canonical datastore for both local development and the deployed app
 - `categories`, `post_categories`
 - `pages`, `nav_links`, `site_settings`
 
-Drizzle schema in `lib/db/src/schema/`. Use `npm run push --workspace=@workspace/db` to apply schema changes.
+Drizzle schema lives in `lib/db/src/schema/`. The runtime reconciliation path is `lib/db/src/migrate.ts`, which is the current source of truth for the shipped schema. `npm run push --workspace=@workspace/db` is available, but the deployed app also relies on the runtime schema shape matching `ensureTables()`.
 
 ## API Routes
 
 - `GET /api/healthz` — health check
-- `GET /api/posts` — list posts (paginated, with comment counts)
-- `POST /api/posts` — create post (auth required)
+- `GET /api/posts` — list published posts (paginated, with comment counts)
+- `POST /api/posts` — create post (owner only)
 - `GET /api/posts/:id` — get post + comments
-- `DELETE /api/posts/:id` — delete own post (auth required)
+- `PATCH /api/posts/:id` — update post (owner only)
+- `DELETE /api/posts/:id` — delete post (owner only)
 - `GET /api/posts/user/:userId` — get user's posts
 - `GET /api/posts/search` — public post search
-- `POST /api/posts/:postId/comments` — add comment (auth required)
-- `DELETE /api/comments/:id` — delete own comment (auth required)
+- `GET /api/posts/pending` — owner moderation queue for pending imported posts
+- `POST /api/posts/:id/approve` — owner approval for pending imported post
+- `POST /api/posts/:id/reject` — owner rejection for pending imported post
+- `POST /api/posts/:postId/comments` — add comment (signed-in users)
+- `PATCH /api/comments/:id` — update comment (author or owner)
+- `DELETE /api/comments/:id` — delete comment (author or owner)
 - `GET /api/users/me` — current user profile (auth required)
+- `PATCH /api/users/me` — update current user profile/theme
 - `GET/PATCH /api/users/me/ai-settings` — owner AI vendor settings
 - `POST /api/ai/process` — owner AI text processing
 - `GET/PATCH /api/site-settings` — site settings
 - `GET/POST/PATCH/DELETE /api/categories...` — category management
 - `GET/POST/PATCH/DELETE /api/pages...` — CMS pages
 - `GET/POST/PATCH/DELETE /api/feed-sources...` — inbound feed source management
+- `GET /api/feed-sources/public` — public list of active inbound feed sources
 - `GET /api/feeds` — public feed catalog
 - `GET /api/feed/stats` — total posts + comments count
 
@@ -84,6 +92,7 @@ Drizzle schema in `lib/db/src/schema/`. Use `npm run push --workspace=@workspace
 - The frontend dev server proxies both `/api/*` and `/api/auth/*` to the backend
 - The web app uses cookie-backed sessions; do not attach bearer tokens for browser API calls
 - The first owner is promoted manually after first login using the scripts package
+- In production on Replit, the built frontend and the API share one origin
 
 ## Important Notes
 
@@ -92,6 +101,7 @@ Drizzle schema in `lib/db/src/schema/`. Use `npm run push --workspace=@workspace
 - Route order in `routes/index.ts`: pending-post routes mount before generic post routes; pages mount after categories to avoid route collisions.
 - Drizzle operators (`eq`, `desc`, `count`, etc.) are re-exported from `@workspace/db` to avoid version conflicts.
 - The API server handles `SIGTERM`/`SIGINT` gracefully (idempotent shutdown with a 5s force-exit safeguard) so workflow restarts and deploys exit cleanly.
+- `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly 32 bytes. A plain 32-character ASCII string is valid.
 - `artifacts/microblog/vite.config.ts`:
   - Listens on `FRONTEND_PORT ?? PORT ?? 3000` so it works both locally and inside the Replit artifact (which sets `PORT`).
   - Proxies `/api/*` and `/api/auth/*` to `API_ORIGIN` (default `http://localhost:${API_PORT ?? 8080}`). Use `API_PORT`, **not** `PORT`, when overriding — `PORT` is the frontend's own port.
