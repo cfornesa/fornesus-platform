@@ -34,6 +34,18 @@ options regardless of session context. -->
 
 ---
 
+## 2026-05-06 — Feed Improvements, Post Filters, Display Name Propagation
+
+### Decisions Confirmed
+- `GET /api/feeds` (feed catalog) now always returns all category feeds (Atom + JSON pairs) in the default response. The former `?category=<slug>` param is retained as a no-op so existing callers still receive a valid response. Per-page feeds remain contextual: `?page=<slug>` appends them only when the slug resolves to a published page.
+- `feed_sources.author_name` is a new optional column. When set, it overrides the individual `author_name` used as the byline on all posts imported from that source. The admin feeds UI now supports inline editing of existing sources and an author name field in the create form.
+- PostCard byline for imported posts now shows the source blog name as the primary byline. When a feed item declares a distinct individual author, the attribution line shows "by [author] via [Blog]". This separates blog identity from individual item authorship.
+- `GET /api/posts` now supports server-side `?category=<slug|uncategorized>` and `?source=<id|original>` filters. Moving filtering server-side enables correct pagination when a filter is active. "uncategorized" returns posts with no category; "original" returns posts with no source feed.
+- `PATCH /api/users/me` now retroactively propagates display name changes to `posts.author_name` for all posts authored by that user.
+- New optional env vars `PUBLIC_SITE_URL`, `SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_AUTHOR_NAME` for canonical site identity in feed metadata and Open Graph tags. `PUBLIC_SITE_URL` should always be set in production.
+
+---
+
 ## 2026-05-05 — Docs Synced To Shipped Replit Runtime
 
 ### Decisions Confirmed

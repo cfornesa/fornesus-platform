@@ -45,6 +45,14 @@ DB_PASS=your_database_password
 DB_SSL=false
 CRON_SECRET=replace_with_a_long_random_secret_for_feed_refresh
 AI_SETTINGS_ENCRYPTION_KEY=12345678901234567890123456789012
+
+# Optional — site identity used in feed metadata and Open Graph tags.
+# Set PUBLIC_SITE_URL to your canonical public URL in production so feed
+# links and OG tags always point to the right origin regardless of proxy.
+# PUBLIC_SITE_URL=https://your-domain.com
+# SITE_TITLE=My Microblog
+# SITE_DESCRIPTION=A personal microblog.
+# SITE_AUTHOR_NAME=Your Name
 ```
 
 Generate a real auth secret with something like:

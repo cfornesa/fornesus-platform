@@ -91,3 +91,18 @@ or rejection. -->
 
 2026-05-05 · AI SETTINGS · `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly 32 bytes for owner AI vendor settings to save successfully; a plain 32-character ASCII string is valid.
     [Verified from `artifacts/api-server/src/lib/ai-settings.ts` and the successful schema audit ruling the DB out as the cause of the save failure.]
+
+2026-05-06 · POST FILTERS · `GET /api/posts` now supports server-side `?category=<slug|uncategorized>` and `?source=<id|original>` filters. "uncategorized" returns posts with no category; "original" returns posts with no source feed. Previously these were client-side only; moving them server-side enables correct pagination under an active filter.
+    [Verified from the new conditions logic in `artifacts/api-server/src/routes/posts.ts` and the queryParams construction in `artifacts/microblog/src/pages/home.tsx`.]
+
+2026-05-06 · USER PROFILE · `PATCH /api/users/me` now retroactively propagates display name changes to all posts authored by that user (sets `posts.author_name = new name`). Historical post bylines stay consistent with the user's current display name.
+    [Verified from the new `db.update(postsTable)` call after the user update in `artifacts/api-server/src/routes/users.ts`.]
+
+2026-05-06 · FEED SOURCES · `feed_sources` has a new optional `author_name` column. When set, it overrides the displayed author for all posts imported from that source. The admin feeds UI (`/admin/feeds`) supports this field in both the create form and inline edit. PostCard shows the source blog name as the primary byline for imported posts; when the feed item has a distinct individual author, the attribution shows "by [author] via [Blog]".
+    [Verified from `lib/db/src/schema/feeds.ts`, `lib/db/src/migrate.ts` `ensureColumn`, the admin-feeds.tsx UI diff, and the PostCard byline logic.]
+
+2026-05-06 · FEEDS CATALOG · `GET /api/feeds` now always includes all category feeds (Atom + JSON pairs) in the default response without requiring a `?category=` param. The param is retained as a no-op for backwards compatibility. The `/feeds` frontend page groups feeds into labeled sections (Site Feeds, category sections, page sections).
+    [Verified from `artifacts/api-server/src/routes/feeds-catalog.ts` and the `groupFeeds()` function in `artifacts/microblog/src/pages/feeds.tsx`.]
+
+2026-05-06 · ENV · `PUBLIC_SITE_URL`, `SITE_TITLE`, `SITE_DESCRIPTION`, and `SITE_AUTHOR_NAME` are new optional env vars for canonical site identity used in feed metadata and Open Graph tags. `PUBLIC_SITE_URL` should be set in production so feed links and OG social previews always use the right origin regardless of proxy headers.
+    [Verified from the `getOrigin()` helper in `feeds-catalog.ts` and the updated `.env.example`.]

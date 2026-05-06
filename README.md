@@ -14,7 +14,9 @@ The current shipped app is a TypeScript npm-workspaces monorepo with:
 - The site owner publishes canonical posts.
 - Signed-in members can comment on published posts.
 - Comment authors and the owner can edit or delete comments.
+- Display name changes propagate retroactively to the `author_name` on all existing posts by that user.
 - The owner can manage categories, standalone pages, site settings, nav links, inbound feed subscriptions, pending imported posts, and AI vendor settings.
+- Inbound feed sources support an optional per-source author name override that controls the displayed author on all posts imported from that source.
 - Public feeds are available at `GET /feed.xml`, `GET /feed.json`, `GET /export/json`, and `GET /export.json`.
 - Category feeds and page feeds are also published.
 - Owner AI writing assistance is available through saved vendor settings in `user_ai_vendor_settings`.
@@ -84,6 +86,12 @@ DB_PASS=your_database_password
 DB_SSL=false
 CRON_SECRET=replace_with_a_long_random_secret
 AI_SETTINGS_ENCRYPTION_KEY=12345678901234567890123456789012
+
+# Optional — set in production so feed links and OG tags always use the right origin
+# PUBLIC_SITE_URL=https://your-domain.com
+# SITE_TITLE=My Microblog
+# SITE_DESCRIPTION=A personal microblog.
+# SITE_AUTHOR_NAME=Your Name
 ```
 
 `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly `32 bytes`. A plain 32-character ASCII string is valid. The API server will throw if this value is missing or the decoded size is not exactly 32 bytes.
@@ -115,7 +123,7 @@ For the current shipped app, treat the runtime schema in `lib/db/src/migrate.ts`
 Public and auth:
 
 - `GET /api/healthz`
-- `GET /api/posts`
+- `GET /api/posts` — accepts optional `?category=<slug|uncategorized>` and `?source=<id|original>` server-side filters
 - `GET /api/posts/:id`
 - `GET /api/posts/search`
 - `GET /api/posts/user/:userId`

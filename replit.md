@@ -59,7 +59,7 @@ Drizzle schema lives in `lib/db/src/schema/`. The runtime reconciliation path is
 ## API Routes
 
 - `GET /api/healthz` — health check
-- `GET /api/posts` — list published posts (paginated, with comment counts)
+- `GET /api/posts` — list published posts (paginated); optional `?category=<slug|uncategorized>` and `?source=<id|original>` server-side filters
 - `POST /api/posts` — create post (owner only)
 - `GET /api/posts/:id` — get post + comments
 - `PATCH /api/posts/:id` — update post (owner only)
@@ -102,6 +102,10 @@ Drizzle schema lives in `lib/db/src/schema/`. The runtime reconciliation path is
 - Drizzle operators (`eq`, `desc`, `count`, etc.) are re-exported from `@workspace/db` to avoid version conflicts.
 - The API server handles `SIGTERM`/`SIGINT` gracefully (idempotent shutdown with a 5s force-exit safeguard) so workflow restarts and deploys exit cleanly.
 - `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly 32 bytes. A plain 32-character ASCII string is valid.
+- Optional site identity env vars: `PUBLIC_SITE_URL` (canonical origin used in feed links and OG tags — set this in production), `SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_AUTHOR_NAME`.
+- Feed sources have an optional `author_name` column that overrides the byline on all imported posts from that source. Manageable via `/admin/feeds` inline edit. Imported post cards show the source blog name as the primary byline; when the feed item has a distinct individual author, the attribution line shows "by [author] via [Blog]".
+- Display name changes (`PATCH /api/users/me`) retroactively update `author_name` on all existing posts by that user.
+- `GET /api/feeds` (feed catalog) always returns all category feeds (Atom + JSON) in the default response; the former `?category=` filter param is kept as a no-op for backwards compatibility. The frontend `/feeds` page groups feeds into sections.
 - `artifacts/microblog/vite.config.ts`:
   - Listens on `FRONTEND_PORT ?? PORT ?? 3000` so it works both locally and inside the Replit artifact (which sets `PORT`).
   - Proxies `/api/*` and `/api/auth/*` to `API_ORIGIN` (default `http://localhost:${API_PORT ?? 8080}`). Use `API_PORT`, **not** `PORT`, when overriding — `PORT` is the frontend's own port.
