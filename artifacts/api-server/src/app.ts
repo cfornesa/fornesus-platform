@@ -44,22 +44,52 @@ app.use(
   }),
 );
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : ["http://localhost:20925", "http://localhost:8080"];
+const configuredOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+  : [];
+const serverPort = process.env.PORT ?? "8080";
+const allowedOrigins = new Set([
+  ...configuredOrigins,
+  `http://localhost:${serverPort}`,
+  `http://127.0.0.1:${serverPort}`,
+]);
 
 app.use(
-  cors({
-    credentials: true,
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS: origin ${origin} not allowed`));
-      }
-    },
-  }),
+  (req, res, next) =>
+    cors({
+      credentials: true,
+      origin: (origin, callback) => {
+        if (!origin || isAllowedOrigin(origin, req)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      },
+    })(req, res, next),
 );
+
+function isAllowedOrigin(origin: string, req: Request): boolean {
+  if (allowedOrigins.has(origin)) {
+    return true;
+  }
+
+  try {
+    const originUrl = new URL(origin);
+    const requestHost = req.hostname;
+
+    if (
+      originUrl.hostname === requestHost &&
+      (originUrl.hostname.endsWith(".replit.dev") ||
+        originUrl.hostname.endsWith(".replit.app"))
+    ) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
 
 app.use(createRateLimitMiddleware({ windowMs: 60_000, max: 240 }));
 app.use(express.json());
