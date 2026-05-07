@@ -28,16 +28,9 @@
 - **What breaks if it changes or is removed:** Publishing, comment writes, authentication persistence, and feed-backed content reads stop working until database connectivity is restored or reconfigured.
 - **Self-hosting alternative:** A self-managed MySQL-compatible database or reverting to self-hosted SQLite on infrastructure that guarantees persistent storage outside the deployment build artifact.
 
-## Replit Deployment
-
-- **Purpose:** Canonical deployment/runtime platform for the currently shipped app, including autoscaled build+run execution and public hosting.
-- **Sends data off-domain:** Yes, insofar as the deployed application is hosted on Replit infrastructure rather than self-hosted.
-- **What breaks if it changes or is removed:** The published site stops being reachable until the app is redeployed elsewhere and its OAuth callbacks, secrets, and DB connectivity are reconfigured.
-- **Self-hosting alternative:** A self-managed Node deployment that serves the built frontend and the Express API from one process.
-
 ## TipTap
 
-- **Purpose:** Rich-text editing for owner-authored posts, including toolbar-driven formatting and custom embed/media nodes.
+- **Purpose:** Rich-text editing for owner-authored posts, including the compact WYSIWYG-style toolbar, heading levels `H1`–`H6`, direct YouTube insertion, and custom embed/media nodes.
 - **Sends data off-domain:** No.
 - **What breaks if it changes or is removed:** The post composer and editor lose their CMS-style authoring experience until replaced, but stored sanitized HTML content remains in the app database.
 - **Self-hosting alternative:** A custom `contenteditable` editor or a different in-repo editor stack.

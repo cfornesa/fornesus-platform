@@ -1,121 +1,89 @@
-# Workspace
+# Microblog
 
-## Overview
+A full-stack microblogging platform enabling users to create, share, and discover content, with robust administration features for owners.
 
-Full-stack author-owned publishing platform deployed on Replit as a single Express process that serves both the frontend and the API.
+## Run & Operate
+
+- `npm run typecheck`: Type-check all packages.
+- `npm run build`: Type-check and build all packages.
+- `npm run codegen --workspace=@workspace/api-spec`: Regenerate API hooks and Zod schemas.
+- `npm run push --workspace=@workspace/db`: Push DB schema changes (development only).
+- `npm run dev`: One-port development run, serving frontend and API/Auth routes from the API server.
+- `npm run dev:hot`: Two-port hot-reload workflow for API server and Vite frontend.
+- `npm run list-users --workspace=@workspace/scripts`: List local users.
+- `npm run promote-owner --workspace=@workspace/scripts -- --email you@example.com`: Promote user to owner role.
+
+**Required Environment Variables:**
+- `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`: MySQL connection details.
+- `AUTH_SECRET`: Long random string for Auth.js session signing.
+- `GITHUB_ID`, `GITHUB_SECRET` OR `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: OAuth credentials (at least one provider).
+- `AI_SETTINGS_ENCRYPTION_KEY`: 32-byte secret for encrypting AI API keys (if AI feature is used).
 
 ## Stack
 
-- **Monorepo tool**: npm workspaces (npm 11.12.1 — pnpm is not used anywhere)
-- **Node.js version**: 24
-- **Package manager**: npm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: MySQL via Drizzle ORM + `mysql2` (driver). Connection configured via `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/`DB_PASS`/`DB_SSL`.
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec → React Query hooks + Zod schemas)
-- **Build**: esbuild (API server, ESM bundle) + Vite (frontend)
-- **Auth**: Auth.js with GitHub + Google OAuth, local sessions, and app-owned roles
+- **Monorepo**: npm workspaces
+- **Node.js**: 24
+- **TypeScript**: 5.9
+- **API**: Express 5
+- **Database**: MySQL (mysql2) + Drizzle ORM
+- **Validation**: Zod (v4), drizzle-zod
+- **API Codegen**: Orval (from OpenAPI spec)
+- **Build**: esbuild
+- **Auth**: Auth.js (GitHub, Google OAuth, local sessions)
 - **Frontend**: React + Vite (Tailwind CSS)
 
-## Packages
+## Where things live
 
-| Package | Path | Purpose |
-|---|---|---|
-| `@workspace/api-server` | `artifacts/api-server/` | Express API server (posts, comments, users, feed stats) |
-| `@workspace/microblog` | `artifacts/microblog/` | React + Vite frontend (home feed, post detail, user profile) |
-| `@workspace/db` | `lib/db/` | Drizzle schema + db client (MySQL via `mysql2`) |
-| `@workspace/api-spec` | `lib/api-spec/` | OpenAPI 3.1 spec + Orval codegen config |
-| `@workspace/api-client-react` | `lib/api-client-react/` | Generated React Query hooks + custom fetch |
-| `@workspace/api-zod` | `lib/api-zod/` | Generated Zod request/response schemas |
+- `artifacts/api-server/`: Express API server.
+- `artifacts/microblog/`: React + Vite frontend.
+- `lib/db/`: Drizzle schema and DB client.
+  - Source-of-truth: `lib/db/src/schema/` (DB schema), `lib/db/install.sql` (full DB install script).
+- `lib/api-spec/`: OpenAPI 3.1 spec and Orval codegen config.
+  - Source-of-truth: `lib/api-spec/openapi.yaml` (API contracts).
+- `lib/api-client-react/`: Generated React Query hooks.
+- `lib/api-zod/`: Generated Zod request/response schemas.
+- `artifacts/microblog/src/index.css`: Theme styles.
+- `artifacts/microblog/src/lib/site-themes.ts`: Catalog of themes and palettes.
 
-## Key Commands
+## Architecture decisions
 
-- `npm run typecheck` — full typecheck across all packages
-- `npm run build` — typecheck + build all packages
-- `npm run codegen --workspace=@workspace/api-spec` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `npm run push --workspace=@workspace/db` — push DB schema changes manually when needed
-- `npm run push-force --workspace=@workspace/db` — force Drizzle schema push
-- `npm run dev` — default single-port local app flow
-- `npm run dev:hot` — optional two-port dev flow with Vite hot reload
-- `npm run dev:api` — run API server locally
-- `npm run dev:web` — run the Vite frontend locally on `FRONTEND_PORT` (or `PORT` when launched as a Replit artifact)
-- `npm run list-users --workspace=@workspace/scripts` — list local users after first sign-in
-- `npm run promote-owner --workspace=@workspace/scripts -- --email you@example.com` — promote your account to owner
+- **Monorepo Structure**: Uses npm workspaces for a unified development environment for multiple packages, enhancing code sharing and consistency.
+- **Single-Runnable Deployment**: The application is deployed as a single runnable to ensure correct routing order for all API endpoints, including feeds, avoiding issues with static asset edge handlers.
+- **Host-Agnostic Feed URLs**: Feed URL generation (`feeds.ts`, `feeds-catalog.ts`) derives the origin from `x-forwarded-proto`/`x-forwarded-host` (or the raw Express host as fallback). `PUBLIC_SITE_URL` is intentionally not used for feed URLs so the correct host is reflected across local, Replit dev, and Replit production environments.
+- **Replit Webview Proxy Limitation**: The Replit dev proxy only forwards `/api/*` paths to Express; all other paths are served as the SPA (`index.html`), regardless of file extension. This affects both the `*.replit.dev` webview URL and any custom domain CNAMEd to `*.replit.dev` (including `platform.creatrweb.com` while it points to the dev URL). **Fix**: feed content routes and the catalog URL generation were moved into the API router (under `/api`) in `feeds-catalog.ts`. The primary feed URLs are now `/api/feeds/atom`, `/api/feeds/json`, `/api/feeds/mf2`, `/api/categories/:slug/feeds/atom`, `/api/categories/:slug/feeds/json`, `/api/p/:slug/feeds/atom`, and `/api/p/:slug/feeds/json`. The original extension-based routes (`/feed.xml`, `/feed.json`, `/atom`, `/jsonfeed`, etc.) are kept as backward-compatible aliases in `feeds.ts`.
+- **Port Setup**: The Replit workflow sets `PORT=5000` inline (`PORT=5000 npm run dev`). `externalPort = 80` maps to `localPort = 5000` for the default webview URL. `externalPort = 5000` also maps to `localPort = 5000` for direct port access. `.env` has `PORT=4000` for local development — macOS's AirPlay Receiver occupies port 5000, so local dev uses 4000 while Replit overrides to 5000 via the workflow.
+- **HTML Sanitization**: All HTML feed bodies are sanitized server-side to prevent XSS attacks, stripping dangerous markup while preserving necessary microformats2 markers.
+- **Measurement-based Navbar**: The header dynamically adjusts inline navigation links and search bar visibility based on available width, using a `ResizeObserver` to optimize layout across various desktop screen sizes without a fixed hamburger.
+- **Dedicated `content_text` column for Full-Text Search**: A separate, automatically populated `content_text` column on the `posts` table ensures that the MySQL FULLTEXT index is always synchronized with the rendered post body, providing consistent and accurate search results.
 
-## Database
+## Product
 
-MySQL is the canonical datastore for both local development and the deployed app. Current tables include:
+- **Microblogging**: Users can create, view, and comment on posts.
+- **User Profiles**: Authenticated users can manage their public identity, including name, username, bio, website, and social links.
+- **Site Customization**: Owners can customize site-wide identity, theme, color palette, and individual colors.
+- **Per-User Profile Theming**: Signed-in users can personalize their individual profile page's theme, palette, and colors, which applies only to their profile content.
+- **Rich Post Editor**: Provides owners with a WYSIWYG editor for posts, supporting text formatting, image uploads, and embedded media (YouTube, generic iframes).
+- **Inbound Feeds (PESOS)**: Owners can subscribe to external RSS/Atom feeds, review imported items, and manage their publication status.
+- **Outbound Feeds**: The site publishes Atom (`/api/feeds/atom`), JSON Feed (`/api/feeds/json`), and Microformats2 export (`/api/feeds/mf2`). Per-category and per-page variants follow the same pattern (e.g. `/api/categories/:slug/feeds/atom`, `/api/p/:slug/feeds/atom`). The legacy extension-based and extension-free routes (`/feed.xml`, `/feed.json`, `/atom`, `/jsonfeed`, etc.) are kept as backward-compatible aliases.
+- **Full-Text Search**: Provides a search interface for posts with filters for categories, sources, author, and content format.
+- **Category Management**: Owners can create, rename, and delete categories for posts.
 
-- `users`, `accounts`, `sessions`, `verification_tokens`
-- `user_ai_vendor_settings`
-- `posts`, `comments`, `reactions`
-- `feed_sources`, `feed_items_seen`
-- `categories`, `post_categories`
-- `pages`, `nav_links`, `site_settings`
+## User preferences
 
-Drizzle schema lives in `lib/db/src/schema/`. The runtime reconciliation path is `lib/db/src/migrate.ts`, which is the current source of truth for the shipped schema. `npm run push --workspace=@workspace/db` is available, but the deployed app also relies on the runtime schema shape matching `ensureTables()`.
+- _Populate as you build_
 
-## API Routes
+## Gotchas
 
-- `GET /api/healthz` — health check
-- `GET /api/posts` — list published posts (paginated); optional `?category=<slug|uncategorized>` and `?source=<id|original>` server-side filters
-- `POST /api/posts` — create post (owner only)
-- `GET /api/posts/:id` — get post + comments
-- `PATCH /api/posts/:id` — update post (owner only)
-- `DELETE /api/posts/:id` — delete post (owner only)
-- `GET /api/posts/user/:userId` — get user's posts
-- `GET /api/posts/search` — public post search
-- `GET /api/posts/pending` — owner moderation queue for pending imported posts
-- `POST /api/posts/:id/approve` — owner approval for pending imported post
-- `POST /api/posts/:id/reject` — owner rejection for pending imported post
-- `POST /api/posts/:postId/comments` — add comment (signed-in users)
-- `PATCH /api/comments/:id` — update comment (author or owner)
-- `DELETE /api/comments/:id` — delete comment (author or owner)
-- `GET /api/users/me` — current user profile (auth required)
-- `PATCH /api/users/me` — update current user profile/theme
-- `GET/PATCH /api/users/me/ai-settings` — owner AI vendor settings
-- `POST /api/ai/process` — owner AI text processing
-- `GET/PATCH /api/site-settings` — site settings
-- `GET/POST/PATCH/DELETE /api/categories...` — category management
-- `GET/POST/PATCH/DELETE /api/pages...` — CMS pages
-- `GET/POST/PATCH/DELETE /api/feed-sources...` — inbound feed source management
-- `GET /api/feed-sources/public` — public list of active inbound feed sources
-- `GET /api/feeds` — public feed catalog
-- `GET /api/feed/stats` — total posts + comments count
+- **MySQL DATETIME**: Use `formatMysqlDateTime()` for app-managed MySQL `DATETIME(3)` writes, not `toISOString()`, to prevent timezone-related display issues.
+- **Codegen Drift**: After any change to `lib/api-spec/openapi.yaml`, run `npm run codegen --workspace=@workspace/api-spec` to regenerate API clients and Zod schemas to avoid type errors.
+- **Phantom Git Parents**: If `git push` fails with "did not receive expected object", use `git fast-export --all --reference-excluded-parents | git fast-import` into a temporary repo, then force-push to `origin/main` to resolve dangling parent references.
+- **Auth.js `AUTH_URL`**: Do not set `AUTH_URL` or `NEXTAUTH_URL` in `.env`; the application derives these values dynamically to prevent OAuth redirect mismatches.
 
-## Auth.js
+## Pointers
 
-- Backend auth is mounted at `/api/auth/*` in the Express server
-- Default local development uses one origin at `http://localhost:8080`
-- Optional hot mode uses frontend `http://localhost:3000` with API/Auth at `http://localhost:8080`
-- The frontend dev server proxies both `/api/*` and `/api/auth/*` to the backend
-- The web app uses cookie-backed sessions; do not attach bearer tokens for browser API calls
-- The first owner is promoted manually after first login using the scripts package
-- In production on Replit, the built frontend and the API share one origin
-
-## Important Notes
-
-- `mysql2` is bundled via esbuild for the API server; native modules are listed as externals in `artifacts/api-server/build.mjs`.
-- Route order in `posts.ts`: `/feed/stats` and `/posts/user/:userId` come BEFORE `/posts/:id`.
-- Route order in `routes/index.ts`: pending-post routes mount before generic post routes; pages mount after categories to avoid route collisions.
-- Drizzle operators (`eq`, `desc`, `count`, etc.) are re-exported from `@workspace/db` to avoid version conflicts.
-- The API server handles `SIGTERM`/`SIGINT` gracefully (idempotent shutdown with a 5s force-exit safeguard) so workflow restarts and deploys exit cleanly.
-- `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly 32 bytes. A plain 32-character ASCII string is valid.
-- Optional site identity env vars: `PUBLIC_SITE_URL` (canonical origin used in feed links and OG tags — set this in production), `SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_AUTHOR_NAME`.
-- Feed sources have an optional `author_name` column that overrides the byline on all imported posts from that source. Manageable via `/admin/feeds` inline edit. Imported post cards show the source blog name as the primary byline; when the feed item has a distinct individual author, the attribution line shows "by [author] via [Blog]".
-- Display name changes (`PATCH /api/users/me`) retroactively update `author_name` on all existing posts by that user.
-- `GET /api/feeds` (feed catalog) always returns all category feeds (Atom + JSON) in the default response; the former `?category=` filter param is kept as a no-op for backwards compatibility. The frontend `/feeds` page groups feeds into sections.
-- `artifacts/microblog/vite.config.ts`:
-  - Listens on `FRONTEND_PORT ?? PORT ?? 3000` so it works both locally and inside the Replit artifact (which sets `PORT`).
-  - Proxies `/api/*` and `/api/auth/*` to `API_ORIGIN` (default `http://localhost:${API_PORT ?? 8080}`). Use `API_PORT`, **not** `PORT`, when overriding — `PORT` is the frontend's own port.
-
-## Deployment
-
-- Configured in `.replit` under `[deployment]`:
-  - `deploymentTarget = "autoscale"`
-  - `build = ["npm", "run", "build"]` — runs typecheck + Vite + esbuild across all workspaces.
-  - `run = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]` — single-process server that serves the built frontend statically from `artifacts/microblog/dist/public` and the API on `/api/*` on the same port.
-- Deployment uses **npm** end-to-end. There are no pnpm invocations in any `artifact.toml` or root config.
-
-Use the root `package.json` workspace configuration for workspace structure, TypeScript setup, and package details.
+- **Creatrweb Framework**: [https://github.com/cfornesa/creatrweb](https://github.com/cfornesa/creatrweb)
+- **OpenAPI Specification**: [https://spec.openapis.org/oas/v3.1.0](https://spec.openapis.org/oas/v3.1.0)
+- **Drizzle ORM**: [https://orm.drizzle.team/](https://orm.drizzle.team/)
+- **Auth.js Documentation**: [https://authjs.dev/](https://authjs.dev/)
+- **React Documentation**: [https://react.dev/](https://react.dev/)
+- **Vite Documentation**: [https://vitejs.dev/](https://vitejs.dev/)

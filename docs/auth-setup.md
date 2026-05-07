@@ -42,17 +42,6 @@ DB_PORT=3306
 DB_NAME=your_database_name
 DB_USER=your_database_user
 DB_PASS=your_database_password
-DB_SSL=false
-CRON_SECRET=replace_with_a_long_random_secret_for_feed_refresh
-AI_SETTINGS_ENCRYPTION_KEY=12345678901234567890123456789012
-
-# Optional — site identity used in feed metadata and Open Graph tags.
-# Set PUBLIC_SITE_URL to your canonical public URL in production so feed
-# links and OG tags always point to the right origin regardless of proxy.
-# PUBLIC_SITE_URL=https://your-domain.com
-# SITE_TITLE=My Microblog
-# SITE_DESCRIPTION=A personal microblog.
-# SITE_AUTHOR_NAME=Your Name
 ```
 
 Generate a real auth secret with something like:
@@ -66,8 +55,6 @@ openssl rand -hex 32
 - The app expects MySQL connection settings through `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASS`.
 - A single canonical MySQL database can be shared by both the deployed app and a local publishing workflow.
 - The legacy SQLite file should now be treated as migration or recovery material only, using the optional `SQLITE_IMPORT_PATH` when needed.
-- The current baseline schema includes auth tables, publishing tables, site settings, categories, pages, nav links, feed ingestion tables, and owner AI settings.
-- If you reset the database from scratch, rebuild the full current schema first, then boot the app and perform owner promotion after first login.
 
 ## OAuth Callback URLs
 
@@ -115,28 +102,23 @@ You can also promote by user ID:
 npm run promote-owner --workspace=@workspace/scripts -- --id your-user-id
 ```
 
-## Additional Runtime Secrets
-
-- `CRON_SECRET` lets automated feed refresh callers authenticate with `x-cron-secret` instead of an owner cookie session.
-- `AI_SETTINGS_ENCRYPTION_KEY` is required to encrypt owner AI vendor API keys before storing them in `user_ai_vendor_settings`.
-- It must decode to exactly `32 bytes`. A plain 32-character ASCII string is valid.
-
 ## Expected Behavior After Setup
 
+- Signed-in users can keep a stable `username` handle for `/users/@handle` URLs while editing a separate required public display name from `/settings`.
 - Signed-in members can comment.
 - Signed-in members can edit their own comments after posting.
 - The promoted owner can create, edit, and delete posts.
-- Owner post composition uses the rich editor with sanitized HTML storage, local image uploads, and owner-trusted `https:` iframe embeds.
-- The owner can also edit or delete any comment.
-- The owner can manage site settings, categories, pages, feed sources, pending feed imports, navigation items, and AI settings.
+- Owner post composition uses the rich editor with sanitized HTML storage, compact square WYSIWYG-style controls, heading levels `H1`–`H6`, local image uploads, direct YouTube URL insertion, and owner-trusted `https:` iframe embeds.
+- The owner-facing Site Customization reset action restores only theme/palette/color values and preserves site copy and links.
+- The owner can also moderate comments.
 
 ## Public Feed Endpoints
 
 Once the backend and frontend are running, these public feed/export routes should respond without authentication:
 
-- Atom: `http://localhost:8080/feed.xml`
-- JSON Feed: `http://localhost:8080/feed.json`
-- mf2-JSON export: `http://localhost:8080/export/json`
-- Compatibility alias: `http://localhost:8080/export.json`
+- Atom: `http://localhost:4000/api/feeds/atom`
+- JSON Feed: `http://localhost:4000/api/feeds/json`
+- mf2-JSON export: `http://localhost:4000/api/feeds/mf2`
+- Compatibility aliases (also functional): `/atom`, `/jsonfeed`, `/export/json`, `/feed.xml`, `/feed.json`, `/export.json`
 
-On Replit workspace dev, replace `http://localhost:8080` with the Dev URL origin for the running port. On published Replit deployments, replace it with the deployed public origin.
+On Replit workspace dev, replace `http://localhost:4000` with the Dev URL origin. On published deployments, replace it with the deployed public origin. Note: local port is 4000 (macOS AirPlay Receiver occupies 5000); Replit overrides to 5000 via its workflow.
