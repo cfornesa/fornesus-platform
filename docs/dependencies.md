@@ -37,23 +37,23 @@
 
 ## p5
 
-- **Purpose:** Self-hosted runtime for owner-authored interactive art pieces rendered inside app-owned iframe embeds, with the API compiling validated structured sketches into `p5` instance-mode code before any draft is shown.
+- **Purpose:** Self-hosted runtime for owner-authored interactive art pieces rendered inside app-owned iframe embeds, with generated or manual `p5` instance-mode code preflighted before any draft is shown.
 - **Sends data off-domain:** No.
-- **What breaks if it changes or is removed:** Saved interactive `p5` pieces stop rendering and the validated piece-generation pipeline cannot complete its runtime preflight until a compatible local runtime is restored, but the stored piece prompts, structured specs, generated code, and surrounding post content remain intact.
+- **What breaks if it changes or is removed:** Saved interactive `p5` pieces stop rendering and the validated piece-generation pipeline cannot complete its runtime preflight until a compatible local runtime is restored, but stored piece prompts, HTML/CSS/JS code, legacy structured specs, and surrounding post content remain intact.
 - **Self-hosting alternative:** A custom in-repo canvas runtime maintained by the app.
 
 ## c2.js
 
-- **Purpose:** Self-hosted creative-coding runtime for owner-authored 2D interactive pieces, used alongside the app-owned structured-spec compiler and preview/embed renderer.
+- **Purpose:** Self-hosted creative-coding runtime for owner-authored 2D interactive pieces, used by the app-owned preview/embed renderer and server-side preflight path.
 - **Sends data off-domain:** No.
-- **What breaks if it changes or is removed:** Saved interactive `c2` pieces stop rendering and new `c2` piece drafts cannot be previewed until a compatible local runtime is restored, but the stored prompts, structured specs, generated code, and post content remain intact.
+- **What breaks if it changes or is removed:** Saved interactive `c2` pieces stop rendering and new `c2` piece drafts cannot be previewed until a compatible local runtime is restored, but stored prompts, HTML/CSS/JS code, legacy structured specs, and post content remain intact.
 - **Self-hosting alternative:** A custom in-repo 2D geometry/canvas runtime maintained by the app.
 
 ## Three.js
 
-- **Purpose:** Self-hosted imperative 3D runtime for owner-authored interactive pieces, used for app-owned structured scene compilation, preview, and embed rendering.
+- **Purpose:** Self-hosted imperative 3D runtime for owner-authored interactive pieces, used for app-owned 3D preview, embed rendering, and runtime preflight.
 - **Sends data off-domain:** No.
-- **What breaks if it changes or is removed:** Saved interactive `three` pieces stop rendering and new `three` drafts cannot be previewed until a compatible local runtime is restored, but the stored prompts, structured specs, generated code, and post content remain intact.
+- **What breaks if it changes or is removed:** Saved interactive `three` pieces stop rendering and new `three` drafts cannot be previewed until a compatible local runtime is restored, but stored prompts, HTML/CSS/JS code, legacy structured specs, and post content remain intact.
 - **Self-hosting alternative:** A custom in-repo WebGL scene runtime maintained by the app.
 
 ## sanitize-html
@@ -160,6 +160,20 @@
 - **What breaks if it changes or is removed:** Syndication to Substack stops working or requires adapter updates; posts already published there remain, local content and all other syndication targets are unaffected.
 - **Self-hosting alternative:** None. Substack is a closed hosted platform and this integration uses an unofficial API surface.
 - **Operational note:** This is an unofficial cookie-authenticated integration. The current adapter performs publication-scoped draft and publish writes against the publication hostname and bootstraps publication auth from the saved session before creating drafts. If Substack changes its internal API shape or invalidates the stored session, the app marks the connection as expired and the owner must update credentials in Admin → Platforms.
+
+## date-fns
+
+- **Purpose:** Date arithmetic and formatting utilities used by the Admin Posts calendar (week navigation, day comparisons, display formatting for scheduled and draft posts).
+- **Sends data off-domain:** No. Runs entirely in the browser.
+- **What breaks if it changes or is removed:** The Admin Posts calendar and scheduling UI lose date formatting and week navigation until a replacement date utility is installed.
+- **Self-hosting alternative:** A custom in-repo set of date utilities, or native Intl APIs for the limited subset used.
+
+## react-day-picker
+
+- **Purpose:** Calendar date-picker UI used in the `PostEditor` scheduling panel to let owners select a date when scheduling a post for future publication.
+- **Sends data off-domain:** No. Renders entirely in the browser.
+- **What breaks if it changes or is removed:** The scheduling date picker in the post composer stops rendering; owners could no longer select a publication date via UI until a replacement is added.
+- **Self-hosting alternative:** A custom in-repo calendar component, or a plain `<input type="date">` fallback.
 
 ## turndown
 
