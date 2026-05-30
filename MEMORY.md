@@ -106,3 +106,15 @@ or rejection. -->
 
 2026-05-06 · ENV · `PUBLIC_SITE_URL`, `SITE_TITLE`, `SITE_DESCRIPTION`, and `SITE_AUTHOR_NAME` are new optional env vars for canonical site identity used in feed metadata and Open Graph tags. `PUBLIC_SITE_URL` should be set in production so feed links and OG social previews always use the right origin regardless of proxy headers.
     [Verified from the `getOrigin()` helper in `feeds-catalog.ts` and the updated `.env.example`.]
+
+2026-05-30 · DOCS · Markdown was reconciled from recent commits and current code after undocumented shipped changes accumulated; `docs/codebase-reconciliation-2026-05-30.md` is the evidence audit for the backfill.
+    [Verified from the 2026-05-30 documentation update and `DECISIONS.md` recovery entry.]
+
+2026-05-30 · POSTS · The current post model includes published, pending, draft, and scheduled statuses, with an in-process scheduler, deferred syndication target IDs, featured images, and per-platform social post drafts.
+    [Verified from `lib/db/src/schema/posts.ts`, `post-scheduler.ts`, `routes/posts.ts`, and `admin-posts.tsx`.]
+
+2026-05-30 · CREATIVE LIBRARY · The owner can manage MySQL-backed media assets, reusable interactive art pieces, and immersive exhibits that combine art pieces and images.
+    [Verified from `media_assets`, `art_pieces`, `art_piece_versions`, `exhibits`, `piece_exhibits`, `media_asset_exhibits`, and the immersive route pages.]
+
+2026-05-30 · ORIGIN · Canonical URL generation now prioritizes the first `ALLOWED_ORIGINS` entry, then `PUBLIC_SITE_URL`, then request headers, with `https://meet.fornesus.com` as the final fallback.
+    [Verified from `artifacts/api-server/src/lib/origin.ts`.]

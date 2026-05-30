@@ -15,11 +15,13 @@ The current shipped app is a TypeScript npm-workspaces monorepo with:
 - Signed-in members can comment on published posts.
 - Comment authors and the owner can edit or delete comments.
 - Display name changes propagate retroactively to the `author_name` on all existing posts by that user.
-- The owner can manage categories, standalone pages, site settings, nav links, inbound feed subscriptions, pending imported posts, and AI vendor settings.
+- The owner can manage categories, standalone pages, site settings, nav links, inbound feed subscriptions, pending imported posts, draft/scheduled posts, platform syndication connections, media assets, interactive art pieces, exhibits, and AI vendor settings.
 - Inbound feed sources support an optional per-source author name override that controls the displayed author on all posts imported from that source.
-- Public feeds are available at `GET /feed.xml`, `GET /feed.json`, `GET /export/json`, and `GET /export.json`.
-- Category feeds and page feeds are also published.
+- Public feeds are available at `GET /api/feeds/atom`, `GET /api/feeds/json`, `GET /api/feeds/mf2`, `GET /feed.xml`, `GET /feed.json`, `GET /export/json`, and `GET /export.json`.
+- Category feeds and page feeds are published through proxy-safe `/api` routes with legacy aliases kept functional.
 - Owner AI writing assistance is available through saved vendor settings in `user_ai_vendor_settings`.
+- Owner AI can also generate and validate reusable `p5`, `c2`, and `three` interactive art pieces.
+- Rich posts can include uploaded/imported media, featured images, embedded pieces, embedded exhibits, and immersive-view links.
 
 ## Runtime Shape
 
@@ -34,9 +36,9 @@ Replit deployment is the canonical production shape.
 Local development has two supported modes:
 
 1. `npm run dev`
-   This matches deployment most closely. The API server serves the built frontend and all auth/API routes on one origin, usually `http://localhost:8080`.
+   This matches deployment most closely. The API server serves the built frontend and all auth/API routes on one origin, using `PORT` from the environment and falling back to `8080` when unset.
 2. `npm run dev:hot`
-   Vite serves the frontend on `http://localhost:3000` and proxies `/api/*` and `/api/auth/*` to the API server on `http://localhost:8080`.
+   Vite serves the frontend on `FRONTEND_PORT` and proxies `/api/*` and `/api/auth/*` to the API server on `API_ORIGIN` or the configured API port.
 
 ## Stack
 
@@ -50,6 +52,8 @@ Local development has two supported modes:
 - Rich editor: TipTap
 - HTML sanitization: `sanitize-html`
 - Feed ingest: `rss-parser`
+- Creative runtimes: `p5`, `c2.js`, `three`
+- Dynamic OG images: Satori + Resvg
 
 ## Key Commands
 
@@ -71,9 +75,9 @@ Important runtime variables include:
 ```env
 PORT=8080
 FRONTEND_PORT=3000
-API_ORIGIN=http://localhost:8080
 ALLOWED_ORIGINS=http://localhost:8080
 AUTH_SECRET=replace_with_a_long_random_secret
+SESSION_SECRET=replace_with_a_long_random_secret
 GITHUB_ID=your_github_oauth_app_client_id
 GITHUB_SECRET=your_github_oauth_app_client_secret
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
@@ -86,6 +90,9 @@ DB_PASS=your_database_password
 DB_SSL=false
 CRON_SECRET=replace_with_a_long_random_secret
 AI_SETTINGS_ENCRYPTION_KEY=12345678901234567890123456789012
+
+# Optional — used by two-port hot development
+# API_ORIGIN=http://localhost:8080
 
 # Optional — set in production so feed links and OG tags always use the right origin
 # PUBLIC_SITE_URL=https://your-domain.com
@@ -108,6 +115,10 @@ Current live schema includes:
 - `feed_sources`, `feed_items_seen`
 - `categories`, `post_categories`
 - `pages`, `nav_links`, `site_settings`
+- `platform_connections`, `post_syndications`, `platform_oauth_apps`
+- `media_assets`
+- `art_pieces`, `art_piece_versions`
+- `exhibits`, `piece_exhibits`, `media_asset_exhibits`
 
 The repo has two schema references:
 
@@ -116,7 +127,7 @@ The repo has two schema references:
 - [lib/db/install.sql](/Users/Fornesus/Code/fornesus-platform/lib/db/install.sql:1)
   This is the fresh-install SQL for environments where you cannot run the Node app first.
 
-For the current shipped app, treat the runtime schema in `lib/db/src/migrate.ts` as the source of truth. Do not use older cleanup guidance that removes `categories`, `pages`, `site_settings`, feed tables, or per-user theme columns from a live current deployment.
+For the current shipped app, treat the runtime schema in `lib/db/src/migrate.ts` as the source of truth. Do not use older cleanup guidance that removes `categories`, `pages`, `site_settings`, feed tables, per-user theme columns, platform syndication tables, media assets, art pieces, or exhibits from a live current deployment.
 
 ## Important Routes
 
@@ -124,6 +135,7 @@ Public and auth:
 
 - `GET /api/healthz`
 - `GET /api/posts` — accepts optional `?category=<slug|uncategorized>` and `?source=<id|original>` server-side filters
+- `GET /api/posts/drafts` owner only
 - `GET /api/posts/:id`
 - `GET /api/posts/search`
 - `GET /api/posts/user/:userId`
@@ -137,10 +149,23 @@ Public and auth:
 - `GET /api/pages/:slug`
 - `GET /api/feed-sources/public`
 - `GET /api/feeds`
+- `GET /api/feeds/atom`
+- `GET /api/feeds/json`
+- `GET /api/feeds/mf2`
+- `GET /api/categories/:slug/feeds/atom`
+- `GET /api/categories/:slug/feeds/json`
+- `GET /api/p/:slug/feeds/atom`
+- `GET /api/p/:slug/feeds/json`
 - `GET /feed.xml`
 - `GET /feed.json`
 - `GET /export/json`
 - `GET /export.json`
+- `GET /atom`
+- `GET /jsonfeed`
+- `GET /embed/pieces/:id`
+- `GET /immersive/images/:encodedRef`
+- `GET /immersive/pieces/:id`
+- `GET /immersive/exhibits/:slug`
 
 Owner-managed or authenticated routes:
 
@@ -155,6 +180,12 @@ Owner-managed or authenticated routes:
 - `GET /api/users/me/ai-settings` owner only
 - `PATCH /api/users/me/ai-settings` owner only
 - `POST /api/ai/process` owner only
+- `POST /api/ai/describe-image` owner only
+- `GET|POST|PATCH|DELETE /api/media...` owner only, except public `GET /api/media/:fileName`
+- `GET|POST|PATCH|DELETE /api/art-pieces...` owner only, except public embed reads
+- `GET|POST|PATCH|DELETE /api/exhibits...` owner-managed writes with public reads
+- `PUT /api/art-pieces/:id/exhibits` owner only
+- `PUT /api/media/:fileName/exhibits` owner only
 - `PATCH /api/site-settings` owner only
 - `POST|PATCH|DELETE /api/categories...` owner only
 - `POST|PATCH|DELETE /api/pages...` owner only
@@ -163,6 +194,9 @@ Owner-managed or authenticated routes:
 - `GET /api/posts/pending` owner only
 - `POST /api/posts/:id/approve` owner only
 - `POST /api/posts/:id/reject` owner only
+- `GET|PUT /api/platform-oauth-apps...` owner only
+- `GET|POST|PATCH|DELETE /api/platform-connections...` owner only
+- `GET|POST /api/platform-oauth...` owner only
 
 ## Owner Bootstrap
 
@@ -179,6 +213,7 @@ npm run promote-owner --workspace=@workspace/scripts -- --email you@example.com
 - Replit preview/dev URLs and deployed `.replit.app` origins are both supported by the API server CORS logic when the request host matches the origin.
 - In deployment, the app is intended to run as a single server process.
 - For OAuth on Replit, configure callbacks against the actual exposed origin for the environment you are using.
+- Canonical origin generation uses the first `ALLOWED_ORIGINS` entry, then `PUBLIC_SITE_URL`, then request headers, then `https://meet.fornesus.com`.
 
 ## Docs Map
 
@@ -186,3 +221,4 @@ npm run promote-owner --workspace=@workspace/scripts -- --email you@example.com
 - [docs/auth-setup.md](/Users/Fornesus/Code/fornesus-platform/docs/auth-setup.md:1) for local, Replit, and OAuth setup
 - [docs/dependencies.md](/Users/Fornesus/Code/fornesus-platform/docs/dependencies.md:1) for vendor/dependency tradeoffs
 - [docs/ai-vendor-verification.md](/Users/Fornesus/Code/fornesus-platform/docs/ai-vendor-verification.md:1) for AI vendor runbook
+- [docs/codebase-reconciliation-2026-05-30.md](/Users/Fornesus/Code/fornesus-platform/docs/codebase-reconciliation-2026-05-30.md:1) for the evidence audit that backfilled undocumented shipped changes

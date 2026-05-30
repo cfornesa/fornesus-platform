@@ -6,7 +6,7 @@ This file is now historical only.
 
 Do not use the old cleanup guidance in this document against the current shipped app.
 
-As of `2026-05-05`, the live app and the deployed Replit runtime expect the following tables to exist:
+As of `2026-05-30`, the live app and the deployed Replit runtime expect the following tables to exist:
 
 - `users`, `accounts`, `sessions`, `verification_tokens`
 - `user_ai_vendor_settings`
@@ -14,12 +14,21 @@ As of `2026-05-05`, the live app and the deployed Replit runtime expect the foll
 - `feed_sources`, `feed_items_seen`
 - `categories`, `post_categories`
 - `pages`, `nav_links`, `site_settings`
+- `platform_connections`, `post_syndications`, `platform_oauth_apps`
+- `media_assets`
+- `art_pieces`, `art_piece_versions`
+- `exhibits`, `piece_exhibits`, `media_asset_exhibits`
 
 They also expect the richer `users` and `posts` column sets that support:
 
 - per-user theme customization
 - owner AI vendor settings
 - inbound feed ingestion and pending moderation
+- POSSE platform connections and syndication records
+- draft posts, scheduled posts, deferred platform IDs, featured images, and per-platform social captions
+- local media uploads/imports stored in MySQL
+- reusable interactive art pieces and version history
+- immersive exhibit walls composed from art pieces and media assets
 - public search backed by `posts.content_text`
 - site settings, categories, pages, and nav management
 

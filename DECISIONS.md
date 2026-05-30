@@ -34,6 +34,33 @@ options regardless of session context. -->
 
 ---
 
+## 2026-05-30 — Codebase Documentation Reconciliation
+
+### Approach Confirmed
+- The reconciliation used a changelog-first audit before updating canonical docs, because many shipped code changes were not recorded in markdown.
+- The update is evidence-only: it records what the current codebase and recent commits implement without introducing new URL, auth, vendor, or syndication decisions.
+- Uncommitted immersive-view changes are documented as working-tree state rather than shipped production behavior.
+
+### Shipped State Recovered
+- Posts now support `published`, `pending`, `draft`, and `scheduled` statuses, with `GET /api/posts/drafts`, an Admin Posts publishing calendar, and an in-process scheduler that publishes due scheduled posts every 60 seconds.
+- Draft and scheduled posts can hold deferred syndication target IDs in `pending_platform_ids`; publishing dispatches those targets and clears the pending list.
+- Posts now support featured images and per-platform social post draft captions.
+- POSSE platform support now spans WordPress.com, self-hosted WordPress, Medium, Blogger, Substack, Bluesky, LinkedIn, Facebook, and Instagram.
+- The local media library stores uploaded/imported image bytes in MySQL-backed `media_assets` and exposes owner management plus public file reads.
+- Interactive art pieces now use `art_pieces` and `art_piece_versions`, support `p5`, `c2`, and `three`, and require validated/preflighted drafts before AI-generated pieces can be saved.
+- AI vendor support now includes Mistral AI, Mistral Vibe, and DeepSeek in addition to the earlier OpenRouter/OpenCode/Google surface; DeepSeek is excluded from image alt text until image-input support is verified.
+- Immersive views now exist for images, pieces, and exhibit walls, with rich-post affordances to open or embed them.
+- Exhibits now group art pieces and media assets through `piece_exhibits` and `media_asset_exhibits`, with configurable wall rows/columns plus artist statement and biography fields.
+- Feed content now has proxy-safe `/api` routes while legacy feed/export aliases remain implemented.
+- Canonical origin resolution now uses first `ALLOWED_ORIGINS`, then `PUBLIC_SITE_URL`, then request headers, then `https://meet.fornesus.com`.
+
+### Documentation Outcome
+- Added `docs/codebase-reconciliation-2026-05-30.md` as the evidence audit.
+- Updated `README.md`, `replit.md`, `docs/auth-setup.md`, and `docs/db-cleanup-report.md` to reflect the recovered shipped state.
+- Preserved the URL guarantee that `GET /export.json`, `GET /feed.xml`, and `GET /feed.json` remain functional.
+
+---
+
 ## 2026-05-06 — Feed Improvements, Post Filters, Display Name Propagation
 
 ### Decisions Confirmed
