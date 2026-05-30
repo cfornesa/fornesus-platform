@@ -60,6 +60,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 - Set `DB_SSL=true` when connecting to any hosted MySQL provider (Hostinger, PlanetScale, Railway, etc.).
 - Schema is applied automatically on startup via `ensureTables()` — no manual migration step required.
 - A single canonical MySQL database can be shared by both the deployed app and a local publishing workflow.
+- Profile photos are stored locally in MySQL-backed paths: member profile-only uploads use `profile_photo_assets`, while owner and feed-source profile photos use the reusable `media_assets` Image Library path.
 
 ## OAuth Callback URLs
 
@@ -80,18 +81,14 @@ For production, use your deployed origin (e.g. `https://yourdomain.com`):
 - GitHub: `https://yourdomain.com/api/auth/callback/github`
 - Google: `https://yourdomain.com/api/auth/callback/google`
 
-### Platform syndication
+### Platform syndication (WordPress.com, Blogger)
 
-These callbacks are separate from sign-in and use credentials stored in the database via `/admin/platforms`. The admin UI generates the exact URIs to register, derived from your canonical origin. Set the first `ALLOWED_ORIGINS` entry to the public origin you want these callbacks to use:
+These callbacks are separate from sign-in and use credentials stored in the database via `/admin/platforms`. The admin UI generates the exact URIs to register, derived from your `ALLOWED_ORIGINS` value:
 
 - WordPress.com redirect URL: `{ALLOWED_ORIGINS}/api/platform-oauth/wordpress-com/callback`
 - Blogger authorized redirect URI: `{ALLOWED_ORIGINS}/api/platform-oauth/blogger/callback`
-- LinkedIn redirect URL: `{ALLOWED_ORIGINS}/api/platform-oauth/linkedin/callback`
-- Meta/Facebook redirect URL: `{ALLOWED_ORIGINS}/api/platform-oauth/facebook/callback`
 
 For Blogger, also register `{ALLOWED_ORIGINS}` as an authorized JavaScript origin and enable the **Blogger API v3** in your Google Cloud project.
-
-Bluesky does not use an OAuth callback. It connects through an AT Protocol App Password entered in `/admin/platforms`.
 
 ## First Owner Bootstrap
 
@@ -117,12 +114,11 @@ npm run promote-owner --workspace=@workspace/scripts -- --id your-user-id
 
 ## Expected Behavior After Setup
 
-- Signed-in members can comment and edit their own comments.
-- The promoted owner can create, edit, delete, draft, schedule, and syndicate posts; manage categories, platforms, feeds, media assets, art pieces, exhibits, and all `/admin/*` routes.
+- Signed-in members can comment, edit their own comments, manage their profile, and upload a profile-only photo.
+- The promoted owner can create, edit, and delete posts; manage categories, platforms, feeds, Image Library-backed profile photos, and feed-source profile photos; and access all `/admin/*` routes.
 - The owner's post composer uses the rich editor with sanitized HTML storage, compact WYSIWYG controls, heading levels `H1`–`H6`, local image uploads, direct featured-image uploads, YouTube URL insertion, and owner-trusted `https:` iframe embeds.
 - The first uploaded content image becomes the featured image automatically unless the owner has manually selected a featured image; oversized uploads return a clear 413 error instead of a generic server failure.
 - Platform connections configured in `/admin/platforms` appear in the post composer's syndication target selector.
-- Draft and scheduled posts can keep selected syndication targets and social captions until publication. Scheduled posts are published by the in-process scheduler and then syndication is dispatched.
 - When the owner syndicates a post authored on this application, the external copy keeps the canonical URL attached. Article-style targets include a visible source line: `Original source at {Site Title}: {Canonical URL}`. Social targets use platform-native behavior: Bluesky, LinkedIn, and Facebook prefer canonical link cards; Instagram uses an image post with the canonical URL in the caption.
 
 ## Public Feed Endpoints
