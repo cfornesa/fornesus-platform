@@ -1,4 +1,9 @@
 
+> **This is a web-standards reference document, not project documentation.**
+> It covers CSS `color-scheme`, `light-dark()`, and scrollbar customization for general reference.
+> This project does not currently implement dark mode — the theme/palette system in `artifacts/microblog/src/lib/site-themes.ts` controls visual identity instead.
+> This file can be deleted if dark mode is not on the roadmap.
+
 --- Guide for dark-mode ---
 # Dark mode
 

@@ -34,6 +34,26 @@ options regardless of session context. -->
 
 ---
 
+## 2026-06-01 — AI Vendor Named-Profile Model
+
+### Trigger
+The single-row-per-vendor model in `user_ai_vendor_settings` could not support multiple configurations for the same vendor (e.g., two OpenCode Go endpoints) and required code changes for every new model variant. The `endpoint_kind` column was also needed to make routing extensible without touching the adapter on every model addition.
+
+### Decisions Confirmed
+- `user_ai_vendor_settings` migrated from a composite PK `(user_id, vendor)` to an auto-increment `id` PK with a unique index on `(user_id, vendor, profile_name)`.
+- New columns: `profile_name VARCHAR(128) NOT NULL DEFAULT 'Default'` and `endpoint_kind VARCHAR(32) NULL`.
+- Existing rows were given a one-time `profile_name` of `"{vendor} - {model}"` (or just the vendor slug when no model was saved).
+- Users now reference profiles by integer ID: `preferred_art_piece_profile_id`, `preferred_text_improve_profile_id`, `preferred_alt_text_profile_id` on the `users` table.
+- The old `preferred_art_piece_vendor`, `preferred_vendor_text_improve`, and `preferred_vendor_alt_text` varchar columns on `users` were migrated and dropped.
+
+### Irreversible — DB Enum Unchanged
+- The `vendor` column value set is unchanged. No new vendor values were added in this migration.
+
+### Migration File
+`docs/migrations/2026-06-01-ai-vendor-profiles.sql`
+
+---
+
 ## 2026-05-30 — Codebase Documentation Reconciliation
 
 ### Approach Confirmed
@@ -55,7 +75,7 @@ options regardless of session context. -->
 - Canonical origin resolution now uses first `ALLOWED_ORIGINS`, then `PUBLIC_SITE_URL`, then request headers, then `https://meet.fornesus.com`.
 
 ### Documentation Outcome
-- Added `docs/codebase-reconciliation-2026-05-30.md` as the evidence audit.
+- ~~Added `docs/codebase-reconciliation-2026-05-30.md` as the evidence audit.~~ **This file was never created.** The reconciliation work was completed but the audit file was not written.
 - Updated `README.md`, `replit.md`, `docs/auth-setup.md`, and `docs/db-cleanup-report.md` to reflect the recovered shipped state.
 - Preserved the URL guarantee that `GET /export.json`, `GET /feed.xml`, and `GET /feed.json` remain functional.
 
@@ -365,16 +385,20 @@ options regardless of session context. -->
 
 ### 2026-05-02 — Auth.js Path Restoration and Configuration
 
-### Decisions Confirmed
-- Reverted the Auth.js mount point to the default **`/api/auth`** to maintain compatibility with existing OAuth provider settings.
-- The `basePath` property was removed from the backend configuration to avoid redundancy warnings and allow for a cleaner environment setup.
-- **`AUTH_URL`** in the environment must now include the full path to the authentication endpoint (e.g., `http://localhost:3000/api/auth` or `https://chrisfornesa.com/api/auth`) for both local and production environments.
+> ⚠️ **SUPERSEDED (2026-06):** The `AUTH_URL`/`NEXTAUTH_URL` guidance in this entry is no longer correct. See current behavior below.
 
-### Implementation Notes
+### Decisions Confirmed (still valid)
+- Reverted the Auth.js mount point to the default **`/api/auth`** to maintain compatibility with existing OAuth provider settings.
+- The `basePath` property was removed from the backend configuration to avoid redundancy warnings.
+
+### AUTH_URL — SUPERSEDED
+- ~~`AUTH_URL` in the environment must now include the full path to the authentication endpoint.~~
+- **Current behavior**: `artifacts/api-server/src/auth/config.ts` actively `delete`s both `AUTH_URL` and `NEXTAUTH_URL` at startup before Auth.js is initialized. Auth.js derives the origin from the live request host, keeping local, Replit dev, and production origins aligned without a static value. Setting `AUTH_URL` in `.env` is harmless (it is deleted immediately) but misleading — do not set it.
+
+### Implementation Notes (still valid)
 - Backend `ExpressAuth` is now mounted at `/api/auth` in `app.ts`.
 - Frontend `authBasePath` was updated to `/api/auth`.
 - Redundant `/auth` proxy rule was removed from `vite.config.ts`.
-- Documentation in `auth-setup.md` was updated to reflect the full `AUTH_URL` requirement.
 
 ---
 

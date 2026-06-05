@@ -107,8 +107,8 @@ or rejection. -->
 2026-05-06 · ENV · `PUBLIC_SITE_URL`, `SITE_TITLE`, `SITE_DESCRIPTION`, and `SITE_AUTHOR_NAME` are new optional env vars for canonical site identity used in feed metadata and Open Graph tags. `PUBLIC_SITE_URL` should be set in production so feed links and OG social previews always use the right origin regardless of proxy headers.
     [Verified from the `getOrigin()` helper in `feeds-catalog.ts` and the updated `.env.example`.]
 
-2026-05-30 · DOCS · Markdown was reconciled from recent commits and current code after undocumented shipped changes accumulated; `docs/codebase-reconciliation-2026-05-30.md` is the evidence audit for the backfill.
-    [Verified from the 2026-05-30 documentation update and `DECISIONS.md` recovery entry.]
+2026-05-30 · DOCS · Markdown was reconciled from recent commits and current code after undocumented shipped changes accumulated. Note: `docs/codebase-reconciliation-2026-05-30.md` was recorded as planned in DECISIONS.md but was never created — the reconciliation work landed in the existing docs (README.md, replit.md, auth-setup.md, db-cleanup-report.md) without a separate audit file.
+    [Verified from the 2026-05-30 documentation update and `DECISIONS.md` recovery entry; absence of the audit file confirmed 2026-06-05.]
 
 2026-05-30 · POSTS · The current post model includes published, pending, draft, and scheduled statuses, with an in-process scheduler, deferred syndication target IDs, featured images, and per-platform social post drafts.
     [Verified from `lib/db/src/schema/posts.ts`, `post-scheduler.ts`, `routes/posts.ts`, and `admin-posts.tsx`.]
@@ -118,3 +118,15 @@ or rejection. -->
 
 2026-05-30 · ORIGIN · Canonical URL generation now prioritizes the first `ALLOWED_ORIGINS` entry, then `PUBLIC_SITE_URL`, then request headers, with `https://meet.fornesus.com` as the final fallback.
     [Verified from `artifacts/api-server/src/lib/origin.ts`.]
+
+2026-06-05 · CORRECTION · The 2026-04-28 DEV SETUP entry is stale: local development now uses `PORT=4000` (not 8080), and `npm run dev` runs a single combined server (not two separate ports). Two-port hot-reload is still available via `npm run dev:hot` using `FRONTEND_PORT`.
+    [Verified from `.env` (PORT=4000), `docs/auth-setup.md`, and `replit.md`.]
+
+2026-06-05 · CORRECTION · The 2026-05-02 AUTH entry referencing "the requirement for a full URL in AUTH_URL" is superseded. The server-side `auth/config.ts` actively `delete`s `AUTH_URL` and `NEXTAUTH_URL` at startup so Auth.js derives the callback origin from the live request host. Do not set either variable in `.env`.
+    [Verified from `artifacts/api-server/src/auth/config.ts` lines 11–12.]
+
+2026-06-05 · SCHEMA · `user_ai_vendor_settings` now uses a named-profile model (migrated 2026-06-01): each row has an auto-increment `id` PK, a `profile_name` column, and an `endpoint_kind` column. Users reference profiles by ID. Old vendor-string preference columns on `users` (`preferred_art_piece_vendor`, etc.) have been dropped.
+    [Verified from `docs/migrations/2026-06-01-ai-vendor-profiles.sql` and `lib/db/src/migrate.ts`.]
+
+2026-06-05 · FEATURES · The app now includes a recycle bin for soft-deleted posts, pieces, media, exhibits, pages, and categories. Owner routes: `GET /api/recycle-bin`, `POST /api/recycle-bin/{type}/:id/restore`, `DELETE /api/recycle-bin/{type}/:id` (permanent), `DELETE /api/recycle-bin` (empty all). Managed from `/admin/recycle-bin`.
+    [Verified from `artifacts/api-server/src/routes/recycle-bin.ts`.]

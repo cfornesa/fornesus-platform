@@ -110,15 +110,16 @@ MySQL is the canonical datastore for both deployment and local authoring.
 Current live schema includes:
 
 - `users`, `accounts`, `sessions`, `verification_tokens`
-- `user_ai_vendor_settings`
+- `user_ai_vendor_settings` — named-profile model as of 2026-06-01; each row now has an auto-increment `id` PK, a `profile_name` column, and an `endpoint_kind` column. Users reference profiles by ID via `preferred_art_piece_profile_id`, `preferred_text_improve_profile_id`, `preferred_alt_text_profile_id`. The old vendor-string preference columns on `users` have been dropped.
 - `posts`, `comments`, `reactions`
 - `feed_sources`, `feed_items_seen`
 - `categories`, `post_categories`
 - `pages`, `nav_links`, `site_settings`
 - `platform_connections`, `post_syndications`, `platform_oauth_apps`
-- `media_assets`
+- `media_assets`, `profile_photo_assets`, `site_assets`
 - `art_pieces`, `art_piece_versions`
 - `exhibits`, `piece_exhibits`, `media_asset_exhibits`
+- `site_bootstrap_state`
 
 The repo has two schema references:
 
@@ -134,6 +135,7 @@ For the current shipped app, treat the runtime schema in `lib/db/src/migrate.ts`
 Public and auth:
 
 - `GET /api/healthz`
+- `GET /api/bootstrap-status`
 - `GET /api/posts` — accepts optional `?category=<slug|uncategorized>` and `?source=<id|original>` server-side filters
 - `GET /api/posts/drafts` owner only
 - `GET /api/posts/:id`
@@ -197,6 +199,21 @@ Owner-managed or authenticated routes:
 - `GET|PUT /api/platform-oauth-apps...` owner only
 - `GET|POST|PATCH|DELETE /api/platform-connections...` owner only
 - `GET|POST /api/platform-oauth...` owner only
+- `POST /api/bootstrap/complete` owner only
+- `GET /api/recycle-bin` owner only
+- `POST /api/recycle-bin/posts/:id/restore` owner only
+- `DELETE /api/recycle-bin/posts/:id` owner only (permanent delete)
+- `POST /api/recycle-bin/pieces/:id/restore` owner only
+- `DELETE /api/recycle-bin/pieces/:id` owner only (permanent delete)
+- `POST /api/recycle-bin/media/:id/restore` owner only
+- `DELETE /api/recycle-bin/media/:id` owner only (permanent delete)
+- `POST /api/recycle-bin/exhibits/:id/restore` owner only
+- `DELETE /api/recycle-bin/exhibits/:id` owner only (permanent delete)
+- `POST /api/recycle-bin/pages/:id/restore` owner only
+- `DELETE /api/recycle-bin/pages/:id` owner only (permanent delete)
+- `POST /api/recycle-bin/categories/:id/restore` owner only
+- `DELETE /api/recycle-bin/categories/:id` owner only (permanent delete)
+- `DELETE /api/recycle-bin` owner only (empties entire bin permanently)
 
 ## Owner Bootstrap
 
@@ -217,8 +234,8 @@ npm run promote-owner --workspace=@workspace/scripts -- --email you@example.com
 
 ## Docs Map
 
-- [replit.md](/Users/Fornesus/Code/fornesus-platform/replit.md:1) for operational repo/runtime notes
-- [docs/auth-setup.md](/Users/Fornesus/Code/fornesus-platform/docs/auth-setup.md:1) for local, Replit, and OAuth setup
-- [docs/dependencies.md](/Users/Fornesus/Code/fornesus-platform/docs/dependencies.md:1) for vendor/dependency tradeoffs
-- [docs/ai-vendor-verification.md](/Users/Fornesus/Code/fornesus-platform/docs/ai-vendor-verification.md:1) for AI vendor runbook
-- [docs/codebase-reconciliation-2026-05-30.md](/Users/Fornesus/Code/fornesus-platform/docs/codebase-reconciliation-2026-05-30.md:1) for the evidence audit that backfilled undocumented shipped changes
+- [replit.md](replit.md) for operational repo/runtime notes
+- [docs/auth-setup.md](docs/auth-setup.md) for local, Replit, and OAuth setup
+- [docs/dependencies.md](docs/dependencies.md) for vendor/dependency tradeoffs
+- [docs/ai-vendor-verification.md](docs/ai-vendor-verification.md) for AI vendor runbook
+- [docs/db-cleanup-report.md](docs/db-cleanup-report.md) — historical only; the old cleanup guidance is superseded
