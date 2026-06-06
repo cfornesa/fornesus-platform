@@ -119,6 +119,15 @@ or rejection. -->
 2026-05-30 · ORIGIN · Canonical URL generation now prioritizes the first `ALLOWED_ORIGINS` entry, then `PUBLIC_SITE_URL`, then request headers, with `https://meet.fornesus.com` as the final fallback.
     [Verified from `artifacts/api-server/src/lib/origin.ts`.]
 
+2026-06-05 · AI ROUTE ERROR HANDLING · `decryptAiApiKey` wraps `decryptSecret` in `crypto.ts`, which throws a plain `Error` when the stored encrypted key cannot be read — silently causing a 500. Both the text-generation and describe-image routes in `artifacts/api-server/src/routes/ai.ts` now wrap this call in an isolated try-catch returning a user-facing 409. `logger.error` added at the top of both catch blocks. Fix for end users: re-save the affected vendor API key in Admin → AI.
+    [Verified from `artifacts/api-server/src/routes/ai.ts` and the resolved 500 on POST /api/ai/describe-image.]
+
+2026-06-05 · AI SETTINGS PERSISTENCE · Two bugs caused task-preference settings to require multiple saves: (1) new profiles with temporary string keys produced NaN IDs — fixed by `!d.isNew` in `enabledProfiles` filter in `admin-ai.tsx`; (2) `setQueryData` without `invalidateQueries` left stale cache for late-mounting subscribers — fixed in the `onSuccess` handler.
+    [Verified from `artifacts/microblog/src/pages/admin/admin-ai.tsx`.]
+
+2026-06-05 · AI ERROR SURFACING · All three describe-image error sites swallowed the server message behind a hardcoded fallback. Fixed in `admin-library.tsx`, `FeaturedImagePicker.tsx`, `RichPostEditor.tsx`. Use `getAiFailureMessage` from `components/post/ai-error.ts` as the canonical helper for AI error display.
+    [Verified from the three frontend components and `ai-error.ts`.]
+
 2026-06-05 · CORRECTION · The 2026-04-28 DEV SETUP entry is stale: local development now uses `PORT=4000` (not 8080), and `npm run dev` runs a single combined server (not two separate ports). Two-port hot-reload is still available via `npm run dev:hot` using `FRONTEND_PORT`.
     [Verified from `.env` (PORT=4000), `docs/auth-setup.md`, and `replit.md`.]
 
