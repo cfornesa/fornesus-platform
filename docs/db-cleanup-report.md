@@ -38,9 +38,9 @@ An earlier branch of project history produced cleanup guidance that treated seve
 
 For current operations, use these sources instead:
 
-- [lib/db/src/migrate.ts](lib/db/src/migrate.ts)
-- [lib/db/install.sql](lib/db/install.sql)
-- [README.md](README.md)
-- [replit.md](replit.md)
+- [lib/db/src/migrate.ts](../lib/db/src/migrate.ts)
+- [lib/db/install.sql](../lib/db/install.sql)
+- [README.md](../README.md)
+- [replit.md](../replit.md)
 
 If you need to reconcile a database, reconcile it forward to the current shipped schema rather than trimming it back to the older reduced schema described in the superseded report.

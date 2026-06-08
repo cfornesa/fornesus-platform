@@ -53,7 +53,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 `AI_SETTINGS_ENCRYPTION_KEY` must decode to exactly 32 bytes. The key is used to encrypt both AI vendor API keys and platform OAuth app credentials (CLIENT_ID / CLIENT_SECRET) stored in the database.
 
-> **Do not set `AUTH_URL` or `NEXTAUTH_URL`.** The app's `auth/config.ts` actively deletes both variables at startup (`delete process.env.AUTH_URL`) so that Auth.js derives the origin from the live request host instead. Setting either variable in `.env` is harmless — it gets removed before Auth.js reads it — but it is misleading and should be omitted. A prior DECISIONS.md entry from 2026-05-02 incorrectly required AUTH_URL to be set; that guidance is superseded by the current code behavior.
+> Do not set `AUTH_URL`. Auth.js derives the origin from the incoming request host and derives `/api/auth` from the Express mount point, keeping local and deployed origins aligned automatically.
 
 `OWNER_EMAILS` is the first-owner allowlist for fresh databases. When no owner exists yet, the first successful sign-in whose email matches `OWNER_EMAILS` is promoted automatically and redirected into `/admin/setup`.
 
